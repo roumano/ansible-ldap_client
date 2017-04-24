@@ -4,7 +4,7 @@ Exemple of a group_vars/inventory.yml
 ```
 ---
 ldap:
-   ssl: edfx_ca.crt
+   ssl: exemple_ca.crt
    server: "ldaps://ldap1/,ldaps://ldap2/"
    base: "dc=exemple,dc=com"
    bind: "cn=readonly"
