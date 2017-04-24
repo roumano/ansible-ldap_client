@@ -1,0 +1,44 @@
+---
+# Copy ssh_key.bash & ldsuid & ldsspk in /usr/local/bin/ : 
+- name: "Add script to get ssh key via ldsuid & ldsspk"
+  template:
+    src: "{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+    backup: yes
+  with_items: 
+  - ldsspk
+  - ldsuid
+# Copy ssh_key.bash & ldsuid & ldsspk in /usr/local/bin/ : 
+- name: Add Cron job to get ssh key
+  template:
+    src: ssh_key
+    dest: /etc/cron.daily/ssh_key
+    owner: root
+    group: root
+    mode: 0755
+    backup: yes
+# Execute ssh_key.bash to permit user first connexion : 
+- name: Run ssh_key.bash
+  command: /etc/cron.daily/ssh_key
+# sudo over sssd on debian 7 is not working use old behavior : 
+- name: Update /etc/nsswitch.conf
+  lineinfile:
+    create: yes
+    dest: /etc/nsswitch.conf
+    regexp: "^{{ item.regexp }}" 
+    line: "{{ item.line }}" 
+  with_items:
+  - { regexp: '^sudoers'   , line: 'sudoers:    files ldap' }
+- name: "update /etc/ldap/ldap.conf for sudo (without SSSD)"
+  lineinfile:
+    create: no
+    dest: /etc/ldap/ldap.conf
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+  - { regexp: '^nss_initgroups_ignoreusers'   , line: 'nss_initgroups_ignoreusers      root,ldap,named,avahi,haldaemon,dbus,radvd,tomcat,radiusd,news,mailman,nscd,gdm,portal,dba,nobody,mysql' }
+  - { regexp: '^SUDOERS_BASE'   , line: 'SUDOERS_BASE    ou=SUDOers,{{ ldap.base }}' }
+  - { regexp: '^TLS_CHECKPEER'   , line: 'TLS_CHECKPEER   off' }

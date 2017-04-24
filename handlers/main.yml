@@ -1,0 +1,11 @@
+- name: service | sssd | restart
+  service:
+    name: sssd
+    state: restarted
+  changed_when: false
+- name: service | sshd | reload
+  service:
+    name: sshd
+    state: reloaded
+  changed_when: false
+

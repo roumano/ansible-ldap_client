@@ -1,0 +1,106 @@
+[domain/default]
+# Debug : Each domain sets its own debug log level. Increasing the log level can provide more information about problems with SSSD or with the domain configuration.
+## 0 	Fatal failures. Anything that would prevent SSSD from starting up or causes it to cease running.
+## 1 	Critical failures. An error that doesn't kill the SSSD, but one that indicates that at least one major feature is not going to work properly.
+## 2 	Serious failures. An error announcing that a particular request or operation has failed.
+## 3 	Minor failures. These are the errors that would percolate down to cause the operation failure of 2.
+## 4 	Configuration settings.
+## 5 	Function data.
+## 6 	Trace messages for operation functions.
+## 7 	Trace messages for internal control functions.
+## 8 	Contents of function-internal variables that may be interesting.
+## 9 	Extremely low-level tracing information. 
+debug_level = {{ ldap.debug | default('2') }}
+# Ldap BackEnd : 
+id_provider = ldap
+access_provider = ldap
+autofs_provider = ldap
+auth_provider = ldap
+chpass_provider = ldap
+ldap_tls_cacert = {{ ldap_dir }}/cacerts/ca.crt
+ldap_tls_reqcert = allow
+ldap_id_use_start_tls = False
+ldap_tls_cacertdir = {{ ldap_dir }}/cacerts
+ldap_user_object_class = posixAccount
+# Configuration : 
+ldap_search_base = {{ ldap.base }}
+ldap_user_search_base = ou=People,{{ ldap.base }}
+ldap_group_search_base = ou=Group,{{ ldap.base }}
+ldap_sudo_search_base = ou=SUDOers,{{ ldap.base }}
+
+ldap_uri = {{ ldap.server }}
+ldap_default_bind_dn = {{ ldap.bind | default('cn=readonly') }},{{ ldap.base }}
+ldap_default_authtok_type = password
+ldap_default_authtok = {{ ldap.bindpwd |default('XXXX') }}
+# User Management : 
+## Show expiration warning if password will expire
+pwd_expiration_warning = 7
+## Determines if user credentials are also cached in the local LDB cache. User credentials are stored in a SHA512 hash, not in plaintext. Default: FALSE 
+cache_credentials = True
+## lockout: use account locking. If set, this option denies access in case that ldap attribute
+## ´pwdAccountLockedTime´ is present and has value of ´000001010000Z´. Please see the option ldap_pwdlockout_dn.
+## Restrit access to machine with host field in the user : host
+{% if ansible_os_family == "Debian" and ansible_distribution_major_version |int == 7 %}
+ldap_access_order = host
+{% else %}
+ldap_access_order = host,lockout
+{% endif %}
+## This option specifies the DN of password policy entry on LDAP server
+ldap_pwdlockout_dn = {{ ldap.pwdlockout |default('cn=default') }},ou=pwpolicies,{{ ldap.base }}
+
+## Local account can have ldap group : 
+ldap_rfc2307_fallback_to_local_users = True
+ldap_user_authorized_host = host
+# Cache Management :
+## entry_cache_timeout sets a validity period, in seconds, for all entries stored in the cache before SSSD requests updated information from the identity provider. There are also individual cache timeout parameters for group, service, netgroup, sudo, and autofs entries; these are listed in the sssd.conf man page. The default time is 5400 seconds (90 minutes).
+entry_cache_timeout = 5400
+##  Sets the time, in seconds, that LDAP searches are allowed to run before they are canceled and cached results are returned. When an LDAP search times out, SSSD automatically switches to offline mode.
+ldap_search_timeout = 10
+## Optional. Specifies whether to store user credentials in the local SSSD domain database cache. The default value for this parameter is false. Set this value to true for domains other than the LOCAL domain to enable offline authentication. 
+cache_credentials = True
+##  Optional. Specifies how long, in seconds, SSSD should cache positive cache hits. A positive cache hit is a successful query. 
+entry_cache_timeout = 3600
+## Incrementally, meaning only changes to rules since the last full update (ldap_sudo_smart_refresh_interval, the time in seconds); the default is 15 minutes, 
+ldap_sudo_smart_refresh_interval=3600
+## Fully, which dumps the entire caches and pulls in all of the current rules on the LDAP server(ldap_sudo_full_refresh_interval, the time in seconds); the default is six hours. 
+ldap_sudo_full_refresh_interval=21600
+## Number of days entries are left in cache after last successful login before being removed during a cleanup of the cache. 0 means keep forever. The value of this parameter must be greater than or equal to offline_credentials_expiration. Default: 0 (unlimited) 
+# account_cache_expiration = 3
+# Sudo :
+sudo_provider = ldap
+# Ssh public Key (mandatory in debian)
+ldap_user_ssh_public_key = sshPublicKey
+
+[sssd]
+services = nss, pam, ssh, sudo
+config_file_version = 2
+
+domains = default
+[nss]
+# 
+# Tells SSSD to exclude certain users from being fetched from the NSS database
+filter_users = root
+filter_groups = root
+# If homedir is not exist in ldap, set a default one : 
+fallback_homedir = /home/%u
+# if shell is not define in ldap, set a default one : 
+default_shell = /bin/bash
+#  Sets a debug logging level.  integer, 0 - 9 
+debug_level = 1
+
+[pam]
+# The pam_pwd_expiration_warning parameter defines the global default setting for all domains on how far in advance of the password expiration to display a warning. This is set for the PAM service. 
+pam_pwd_expiration_warning = 7
+# Sets how long, in days, to allow cached logins if the authentication provider is offline. This value is measured from the last successful online login. If not specified, this defaults to zero (0), which is unlimited.
+offline_credentials_expiration = 0
+# Sets how many failed login attempts are allowed if the authentication provider is offline. If not specified, this defaults to zero (0), which is unlimited. 
+offline_failed_login_attempts = 0
+# Sets how long to prevent login attempts if a user hits the failed login attempt limit. If set to zero (0), the user cannot authenticate while the provider is offline once he hits the failed attempt limit. Only a successful online authentication can re-enable offline authentication. If not specified, this defaults to five (5). 
+offline_failed_login_delay = 5
+
+[sudo]
+# Whether or not to evaluate the sudoNotBefore and sudoNotAfter attributes that implement time-dependent sudoers entries. Default: false 
+sudo_timed = true
+
+[ssh]
+

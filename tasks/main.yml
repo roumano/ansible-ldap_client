@@ -1,0 +1,13 @@
+---
+# SSSD is ready to use on RHEL 7 major_release >=7 or major_release=6 + release >=6.6 otherwise skip it
+- block:
+  # Install default packages list
+  - include: "{{ ansible_pkg_mgr }}.yml"
+  - include: ldap.yml
+  - include: services.yml
+  - include: sshd.yml
+  when: (ansible_os_family == 'RedHat' and (ansible_distribution_major_version|int >= 7 or ( ansible_distribution_version == "6.6" or ansible_distribution_version == "6.7" or ansible_distribution_version == "6.8" or ansible_distribution_version == "6.9" or ansible_distribution_version == "6.10" ) ) ) or ansible_distribution == 'Debian'
+# Debian Wheezy ssh version don't support get ssh key on ldap add cron job to manually update them : 
+- include: manual_ssh_key.yml
+  when: ansible_distribution == 'Debian' and ansible_distribution_major_version|int == 7
+

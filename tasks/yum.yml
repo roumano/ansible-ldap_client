@@ -1,0 +1,12 @@
+---
+#Install standard stuff
+- name: Redhat | Install ldap needed packages
+  yum:
+    name: "{{ item }}"
+  tags: [package]
+  with_items:
+  - authconfig
+  - sssd-ldap
+  - sssd-tools
+  - sudo
+  - openldap-clients

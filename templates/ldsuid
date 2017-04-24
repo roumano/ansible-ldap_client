@@ -1,0 +1,14 @@
+#!/bin/bash -e
+[ -f /etc/ldap.conf ] && ldapcfg=/etc/ldap.conf
+[ -f /etc/openldap/ldap.conf ] && ldapcfg=/etc/openldap/ldap.conf
+[ -f /etc/ldap/ldap.conf ] && ldapcfg=/etc/ldap/ldap.conf
+uri=$(egrep  -i "^uri |^uri	" $ldapcfg | awk '{print $NF}'|tail -1|tr -d '\r')
+search_base="ou=People,"$(egrep  -i "^base |^base	" $ldapcfg | awk '{print $NF}'|tail -1|tr -d '\r')
+
+# Set filters
+search_filter="(&(ObjectClass=posixAccount)(homeDirectory~=/users/)(|(host=$(hostname))(host=\*)))"
+# grep -v '^ ' will remove long line see as new linge as Old version of ldapserch dont accept -o ldif-wrap=no aka no wrapping
+ldapsearch -x -LLL -H $uri -b "$search_base" "$search_filter" uid | \
+grep -v '^dn:'|grep -v '^ ' | \
+awk -F ':' '/uid: / {printf("\n%s",substr($2,2)) }
+/^ / {printf("%s",substr($0,2))}' | grep -v '^$'

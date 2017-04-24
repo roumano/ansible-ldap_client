@@ -1,0 +1,127 @@
+---
+# Permission of directory must be good, otherwise sssd refuse to start
+- name: "Create directory of ldap client configuration"
+  file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+    state: directory
+  with_items:
+  - { path: '{{ ldap_dir }}/cacerts/' , owner: 'root', group: 'root', mode: '0755' }
+  - { path: '/etc/sssd/' , owner: 'root', group: 'root', mode: '0700' }
+  notify:
+  - service | sssd | restart
+
+- name: sssd configuration
+  template:
+    src: sssd.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: 0600
+    backup: yes
+  notify:
+  - service | sssd | restart
+- name: check if local ca.crt exist
+  local_action:
+    module: stat
+    path: "{{ playbook_dir }}/roles/ldap_client/files/{{ ldap.ssl }}"
+  become: false
+  register: file
+- name: SSL ca.crt certificate
+  copy: 
+    src: "files/{{ ldap.ssl }}"
+    dest: "{{ ldap_dir }}/cacerts/ca.crt"
+    owner: root
+    group: root
+    mode: 0604
+    backup: yes
+  notify:
+  - service | sssd | restart
+  when: file.stat.exists 
+
+- name: Update /etc/hosts for ldap server (WITHOUT domainname)
+  lineinfile:
+    create: yes
+    dest: /etc/hosts
+    regexp: "^{{ item.ip }}"
+    line: "{{ item.ip }} {{ item.hostname }}"
+    state: present
+    backup: yes
+  with_items: "{{ ldap.servers }}"
+  when: domainname is not defined
+  notify:
+  - service | sssd | restart
+
+- name: Update /etc/hosts for ldap server (WITH domainname)
+  lineinfile:
+    create: yes
+    dest: /etc/hosts
+    regexp: "^{{ item.ip }}"
+    line: "{{ item.ip }} {{ item.hostname }}.{{ domainname }} {{ item.hostname }}"
+    state: present
+    backup: yes
+  with_items: "{{ ldap.servers }}"
+  when: domainname is defined
+  notify:
+  - service | sssd | restart
+
+- name: Update /etc/nsswitch.conf
+  lineinfile:
+    create: yes
+    dest: /etc/nsswitch.conf
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+  - { regexp: '^passwd'    , line: 'passwd:     files sss' }
+  - { regexp: '^shadow'    , line: 'shadow:     files sss' }
+  - { regexp: '^group'     , line: 'group:      files sss' }
+  - { regexp: '^services'  , line: 'services:   files sss' }
+  - { regexp: '^netgroup'  , line: 'netgroup:   files sss' }
+  - { regexp: '^publickey' , line: 'publickey:  nisplus' }
+  - { regexp: '^automount' , line: 'automount:  files sss' }
+  - { regexp: '^sudoers'   , line: 'sudoers:    files sss' }
+  notify:
+  - service | sssd | restart
+
+# Bug in Centos6 if never make a binding, authconfig with full argument crash : 
+# UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 2047: ordinal not in range(128)
+# Lunch a minimal authconfig to avoid the issue :
+- name: Redhat | Execute authconfig workarround bug
+  command: "authconfig --update --disableldaptls"
+  when: ldap_reconfiguration and ( ansible_os_family == "RedHat" and ansible_distribution_major_version == "6" )
+
+- name: Redhat | Execute authconfig
+  command: "authconfig --update --disableldaptls --disableldap  --disableldapauth --disableforcelegacy --disablenis --disablekrb5 --enablesssd --enablesssdauth --enablelocauthorize --enablemkhomedir --enablecachecreds   --ldapserver='{{ ldap.server }}' --ldapbasedn={{ ldap.base }} --ldaploadcacert=file:{{ ldap_dir }}/cacerts/ca.crt"
+  changed_when: false
+  when: ldap_reconfiguration and ansible_os_family == "RedHat"
+
+- name: Debian | Execute pam-auth-update
+  command: "pam-auth-update --package --force"
+  changed_when: false
+  when: ldap_reconfiguration and ansible_os_family == "Debian"
+
+# pam-auth-update --package --force reset conf of /etc/pam.d/common-session, ...
+- name: Create homedirectory at first connexion
+  lineinfile:
+    create: no
+    dest: /etc/pam.d/common-session
+    regexp: "pam_mkhomedir.so"
+    line: "session required                        pam_mkhomedir.so skel=/etc/skel umask=0027"
+    insertafter: "pam_unix.so"
+    state: present
+  when: ldap_reconfiguration and ansible_os_family == "Debian"
+
+- name: "Configure {{ ldap_dir }}/ldap.conf for default ldap parameters in ldapsearch"
+  lineinfile:
+    create: yes
+    backup: yes
+    dest: "{{ ldap_dir }}/ldap.conf"
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+  - { regexp: '^TLS_CACERTDIR'    , line: 'TLS_CACERTDIR {{ ldap_dir }}/cacerts' }
+  - { regexp: '^URI'    , line: 'URI {{ ldap.server }}' }
+  - { regexp: '^BASE'     , line: 'BASE {{ ldap.base }}' }
+  - { regexp: '^TLS_REQCERT'     , line: 'TLS_REQCERT never' }

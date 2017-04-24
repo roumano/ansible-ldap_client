@@ -1,0 +1,23 @@
+---
+#Install standard stuff
+# Wheezy : sssd version 1.8 sssd-common 1.17, remove sssd otherwise : 
+# "The following packages have unmet dependencies:", " sssd-tools : Depends: sssd (= 1.8.4-2) but it is not going to be installed
+- name: Set list Package for Debian Wheezy 
+  set_fact:
+    ldap_packages:
+    - sudo-ldap
+    - sssd-tools
+  when: ansible_distribution_major_version |int == 7
+- name: Set list Package for Debian Jessie
+  set_fact:
+    ldap_packages:
+    - sudo
+    - sssd-tools
+    - sssd-ldap
+  when: ansible_distribution_major_version |int != 7
+
+- name: Debian | Install ldap needed packages
+  apt:
+    name: "{{ item | default ( {} ) }}"
+  tags: [package]
+  with_items: "{{ ldap_packages }}"

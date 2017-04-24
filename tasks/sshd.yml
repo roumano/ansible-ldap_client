@@ -1,0 +1,27 @@
+# Specific sshd configuration for ldap :
+# Enable sssd get sshPublicKey via : AuthorizedKeysCommand + AuthorizedKeysCommandUser (new) or AuthorizedKeysCommandRunAs (old)
+# ssh version of wheezy don't support this ...
+- name: 'Add AuthorizedKeysCommand + AuthorizedKeysCommandUser (new)'
+  set_fact:
+    ssh_AuthorizedKeys:
+    - { regexp: '^(.*)AuthorizedKeysCommandUser (.*)' , line: 'AuthorizedKeysCommandUser root' }
+    - { regexp: '^(.*)AuthorizedKeysCommand (.*)' , line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys' }     
+  when: ( ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7 ) or ( ansible_os_family == "Debian" and ansible_distribution_major_version|int >= 8 )
+   
+- name: 'Add AuthorizedKeysCommand + AuthorizedKeysCommandRunAs (old)'
+  set_fact:
+    ssh_AuthorizedKeys:
+    - { regexp: '^(.*)AuthorizedKeysCommand (.*)' , line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys' }
+    - { regexp: '^(.*)AuthorizedKeysCommandRunAs (.*)' , line: 'AuthorizedKeysCommandRunAs root' }
+  when: ansible_os_family == "RedHat" and ansible_distribution_major_version == "6"
+   
+- name: 'Update sshd configuration : AuthorizedKeysCommand + AuthorizedKeysCommandUser (new) or AuthorizedKeysCommandRunAs (old)'
+  lineinfile:
+    create: no
+    dest: /etc/ssh/sshd_config
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+    validate: "/usr/sbin/sshd -T -f %s"
+  with_items: "{{ ssh_AuthorizedKeys | default ([]) }}"
+  notify:
+  - service | sssd | restart

@@ -1,0 +1,6 @@
+---
+# By default, don't reconfigure pam and ...
+ldap_reconfiguration: no
+# Normaly configuration go into /etc/openldap/ (like /etc/openldap/ldap.conf & /etc/openldap/cacerts
+# But Debian Wheezy choose : /etc/ldap
+ldap_dir: "{% if ansible_os_family == 'Debian' and ansible_distribution_major_version |int == 7 %}/etc/ldap{% else %}/etc/openldap{% endif %}"

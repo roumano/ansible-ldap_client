@@ -1,0 +1,46 @@
+#!/bin/bash
+for u in $(/usr/local/bin/ldsuid) ; do
+	if [ "$u" = "root" ] ; then
+		# skip actions ! Don't mess up everything
+		:
+	else
+		#note on the below sed : get rid of trailing / in home dir
+		hd=$(getent passwd $u | awk -F: '{print $6}' | sed -r 's:/+$::')
+		uid=$(getent passwd $u | awk -F: '{print $3}')
+		gid=$(getent passwd $u | awk -F: '{print $4}')
+		shell=$(getent passwd $u | awk -F: '{print $NF}')
+		if [[ -z $hd || -z $uid || -z $gid || -z $shell ]] ; then
+			echo "Error to get information for $u : \$HomeDir,\$uid or \$gid or \$shell is empty : $(date "+%Y/%m/%d - %Hh%Mm%Ssec")"
+		elif [ $(basename $shell) != 'nologin' -a $(basename $shell) != 'false' ]
+		then
+			#Only process user if $shell is a real login shell.
+			#else, we don't land in there.
+			case $hd in
+				/|/tmp|/var|/opt|/home|/root|/bin|/usr|/lib|/lib64|/oper|/sbin|/selinux)
+					# avoid messing up with system dirs in case of a crappy LDAP user account
+					echo "DANGEROUS home dir $hd for user $u. SKIPPING"
+					;;
+				*)
+					#default should be fine. Add more exceptions above if required.
+					[ ! -d $hd/.ssh ] && mkdir -p $hd/.ssh
+					#--- minor security fix:
+					#--- remove recursing to avoid dumb issues if some user has / as home dir...
+					chown -h $uid:$gid $hd
+					chmod go-w $hd
+					chown $uid:$gid $hd/.ssh
+					chmod 700 $hd/.ssh
+					SSH_KEY=$(/usr/local/bin/ldsspk $u)
+					if [[ -n $SSH_KEY ]]
+					then
+						#echo $SSH_KEY > $hd/.ssh/authorized_keys
+						# doing an echo will remove all the \n after each ssh key an make
+						# all SSH login attempts fail
+						/usr/local/bin/ldsspk $u > $hd/.ssh/authorized_keys
+						chown $uid:$gid $hd/.ssh/authorized_keys
+						chmod 600 $hd/.ssh/authorized_keys
+					fi
+				;;
+			esac
+		fi
+	fi
+done

@@ -1,0 +1,19 @@
+#!/bin/bash -e
+[ -f /etc/ldap.conf ] && ldapcfg=/etc/ldap.conf
+[ -f /etc/openldap/ldap.conf ] && ldapcfg=/etc/openldap/ldap.conf
+[ -f /etc/ldap/ldap.conf ] && ldapcfg=/etc/ldap/ldap.conf
+
+uri=$(egrep -i "^uri |^uri	" $ldapcfg | awk '{print $NF}'|tail -1|tr -d '\r')
+search_base="ou=People,"$(egrep -i "^base |^base	" $ldapcfg | awk '{print $NF}'|tail -1|tr -d '\r')
+
+uid=$1
+# Never try to get the ssh key of root user :
+[[ -z $uid && $(whoami) == root ]] && exit
+[ "$uid" = "" ] && uid=$(whoami)
+
+search_filter="(&(objectClass=posixAccount)(uid=${uid})(objectClass=LdapPublicKey)(sshPublicKey=*))"
+
+ldapsearch -x -LLL -H $uri -b $search_base $search_filter sshPublicKey | \
+grep -v '^dn:' | \
+awk -F ':' '/sshPublicKey: / {field="pubkey";printf("\n%s",substr($2,2)) }
+/^ / {if (field=="pubkey") {printf("%s",substr($0,2))}}' | grep -v '^$'
