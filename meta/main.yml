@@ -28,3 +28,4 @@ galaxy_info:
   - system
   - ldap
   - authentification
+  - sssd
