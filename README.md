@@ -1,5 +1,6 @@
 # Requirements
 * Optional : define a variable domainname to update /etc/hosts with IP hostname.domainename hostname of ldap server
+
 Exemple of a group_vars/inventory.yml 
 ```
 ---
@@ -26,7 +27,6 @@ domainname: 'aws.edifixio.com'
 sssd-ldap, sssd-tools, sudo (On debian family)
 authconfig, sssd-ldap, sssd-tools, sudo, openldap-clients (On RedHat family)
 * Push ssl certificat if any
-
 * Update /etc/hosts for ldap server
 * Update /etc/nsswitch.conf (adding sss)
 * Enable sssd service at boot of the machine
@@ -35,4 +35,3 @@ authconfig, sssd-ldap, sssd-tools, sudo, openldap-clients (On RedHat family)
 * Enable Create homedirectory at first connexion via pam_mkhomedir.so (on Debian Family)
 * Configure /etc/openldap/ldap.conf for default ldap parameters in ldapsearch
 * SSHD : add AuthorizedKeysCommand & AuthorizedKeysCommandUser into /etc/ssh/sshd_config to get ssh key from ldap
-
