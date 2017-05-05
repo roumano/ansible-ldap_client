@@ -19,5 +19,7 @@
 - name: Debian | Install ldap needed packages
   apt:
     name: "{{ item | default ( {} ) }}"
+  environment:
+    SUDO_FORCE_REMOVE: "yes"
   tags: [package]
   with_items: "{{ ldap_packages }}"
