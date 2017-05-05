@@ -8,7 +8,7 @@ env:
     run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
   - distribution: centos
     version: 6
-    init: /usr/sbin/init
+    init: /sbin/init
     run_opts: ""
   - distribution: ubuntu
     version: 14.04
