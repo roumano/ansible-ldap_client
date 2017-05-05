@@ -49,7 +49,7 @@
     line: "{{ item.ip }} {{ item.hostname }}"
     state: present
     backup: yes
-  with_items: "{{ ldap | default({'servers':[]}) }}"
+  with_items: "{{ ldap.servers | default([]) }}"
   when: domainname is not defined
   notify:
   - service | sssd | restart
@@ -62,7 +62,7 @@
     line: "{{ item.ip }} {{ item.hostname }}.{{ domainname }} {{ item.hostname }}"
     state: present
     backup: yes
-  with_items: "{{ ldap | default({'servers':[]}) }}"
+  with_items: "{{ ldap.servers | default([]) }}"
   when: domainname is defined
   notify:
   - service | sssd | restart
