@@ -20,7 +20,10 @@ services:
 
 before_install:
   # Pull container
-  - 'docker pull ${distribution}:${version}'
+  #- 'docker pull ${distribution}:${version}'
+  # https://hub.docker.com/r/ansible/ansible/tags/
+  - 'docker pull ansible/ansible:${distribution}${version}'
+  
   # Customize container
   - 'docker build --rm=true --file=tests/Dockerfile.${distribution}-${version} --tag=${distribution}-${version}:ansible tests'
 
