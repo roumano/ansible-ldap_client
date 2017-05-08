@@ -6,14 +6,17 @@ env:
     version: 7
     init: /usr/lib/systemd/systemd
     run_opts: "--privileged --volume=/sys/fs/cgroup:/sys/fs/cgroup:ro"
+    url: centos7
   - distribution: centos
     version: 6
     init: /sbin/init
+    url: centos6
     run_opts: ""
   - distribution: ubuntu
-    version: 1404
+    version: 14.04
     init: /sbin/init
     run_opts: ""
+    url: ubuntu1404
 
 services:
   - docker
@@ -22,7 +25,7 @@ before_install:
   # Pull container
   #- 'docker pull ${distribution}:${version}'
   # https://hub.docker.com/r/ansible/ansible/tags/
-  - 'docker pull ansible/ansible:${distribution}${version}'
+  - 'docker pull ansible/ansible:${url}'
   
   # Customize container
   - 'docker build --rm=true --file=tests/Dockerfile.${distribution}-${version} --tag=${distribution}-${version}:ansible tests'
