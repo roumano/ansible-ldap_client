@@ -26,7 +26,7 @@
 - name: check if local ca.crt exist
   local_action:
     module: stat
-    path: "{{ role_paths }}/files/{{ ldap.ssl }}"
+    path: "{{ role_path }}/files/{{ ldap.ssl }}"
   become: false
   register: file
 - name: SSL ca.crt certificate
