@@ -5,7 +5,7 @@
   set_fact:
     ssh_AuthorizedKeys:
     - { regexp: '^(.*)AuthorizedKeysCommandUser (.*)' , line: 'AuthorizedKeysCommandUser root' }
-    - { regexp: '^(.*)AuthorizedKeysCommand (.*)' , line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys' }     
+    - { regexp: '^(.*)AuthorizedKeysCommand (.*)' , line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys' }
   when: ( ansible_os_family == "RedHat" and ansible_distribution_major_version|int >= 7 ) or ( ansible_os_family == "Debian" and ansible_distribution_major_version|int >= 8 )
    
 - name: 'Add AuthorizedKeysCommand + AuthorizedKeysCommandRunAs (old)'
@@ -25,3 +25,4 @@
   with_items: "{{ ssh_AuthorizedKeys | default ([]) }}"
   notify:
   - service | sssd | restart
+  - service | sshd | restart
