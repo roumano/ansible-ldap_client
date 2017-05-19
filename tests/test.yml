@@ -8,7 +8,6 @@
       server: "ldaps://ldap1/,ldaps://ldap2/"
       base: "dc=exemple,dc=com"
       bind: "cn=readonly"
-    domainname: 'aws.edifixio.com'
 
   pre_tasks:
     - name: Add repository for PHP 5.5 + Apache 2.4 on Ubuntu 12.04.
