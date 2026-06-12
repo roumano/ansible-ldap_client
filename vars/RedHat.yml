@@ -1,0 +1,8 @@
+---
+ldap_packages:
+  - authconfig
+  - sssd-ldap
+  - sssd-tools
+  - sudo
+  - openldap-clients
+  - oddjob-mkhomedir

@@ -1,0 +1,86 @@
+---
+# Permission of directory must be good, otherwise sssd refuse to start
+- name: "Create directory of ldap client configuration"
+  ansible.builtin.file:
+    path: "{{ file.path }}"
+    owner: "{{ file.owner }}"
+    group: "{{ file.group }}"
+    mode: "{{ file.mode }}"
+    state: directory
+  with_items:
+    - {path: '/etc/sssd/', owner: 'root', group: 'root', mode: '0700'}
+  loop_control:
+    label: "{{ file.path }}"
+    loop_var: file
+  notify:
+    - service | sssd | restart
+
+- name: Disable ldap_rfc2307_fallback_to_local_users on Ubuntu xenial
+  set_fact:
+    ldap_rfc2307_fallback_to_local_users: false
+  when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16"
+
+- name: sssd configuration
+  ansible.builtin.template:
+    src: sssd.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: 0600
+    backup: true
+  notify:
+    - service | sssd | restart
+
+- name: Update /etc/nsswitch.conf
+  ansible.builtin.lineinfile:
+    create: true
+    dest: /etc/nsswitch.conf
+    regexp: "^{{ item.regexp }}"
+    line: "{{ item.line }}"
+  with_items:
+    - regexp: '^passwd'
+      line: 'passwd:     files sss'
+    - regexp: '^shadow'
+      line: 'shadow:     files sss'
+    - regexp: '^group'
+      line: 'group:      files sss'
+    - regexp: '^services'
+      line: 'services:   files sss'
+    - regexp: '^netgroup'
+      line: 'netgroup:   files sss'
+    - regexp: '^publickey'
+      line: 'publickey:  nisplus'
+    - regexp: '^automount'
+      line: 'automount:  files sss'
+    - regexp: '^sudoers'
+      line: 'sudoers:    files sss'
+  loop_control:
+    label: "{{ item.line }}"
+  notify:
+    - service | sssd | restart
+
+# Bug in Centos6 if never make a binding, authconfig with full argument crash :
+# UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 2047: ordinal not in range(128)
+# Lunch a minimal authconfig to avoid the issue :
+# - name: Redhat | Execute authconfig workarround bug
+#   ansible.builtin.command: "authconfig --update --disableldaptls"
+#   when: ldap_reconfiguration and ( ansible_os_family == "RedHat" and ansible_distribution_major_version == "6" )
+
+# - name: Redhat | Push certificate
+#   ansible.builtin.file:
+#     path: "{{ ldap_dir }}/cacerts"
+#     state: directory
+#   when: ldap_reconfiguration and ansible_os_family == "RedHat"
+
+# - name: Redhat | Push certificate
+#   ansible.builtin.copy:
+#     src: /usr/local/share/ca-certificates/STAR.embl.fr.chain.crt
+#     dest: "{{ ldap_dir }}/cacerts/ca.crt"
+#     remote_src: yes
+#   when: ldap_reconfiguration and ansible_os_family == "RedHat"
+
+# - name: Redhat | Execute authconfig
+# yamllint disable-line rule:line-length
+#   ansible.builtin.command: "authconfig --update --disableldaptls --disableldap  --disableldapauth --disableforcelegacy --disablenis --disablekrb5 --enablesssd --enablesssdauth --enablelocauthorize --enablemkhomedir --enablecachecreds --ldapserver='ldaps://{{ ldap.server | join('/,ldaps://') }}/' --ldapbasedn={{ ldap.base }} --ldaploadcacert=file:{{ ldap_dir }}/cacerts/ca.crt" # noqa 204
+#   changed_when: false
+#   when: ldap_reconfiguration and ansible_os_family == "RedHat"

@@ -1,0 +1,6 @@
+ldap_packages:
+  - sudo
+  - sssd-tools
+  - sssd-ldap
+  - ldap-utils
+  - libsss-sudo

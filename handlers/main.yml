@@ -9,4 +9,8 @@
 - name: service | sshd | restart
   service:
     name: sshd
-    state: reloaded
+    state: restarted
+- name: service | nslcd | restart
+  service:
+    name: nslcd
+    state: restarted

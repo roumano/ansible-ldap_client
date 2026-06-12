@@ -14,7 +14,7 @@ ldap:
        ip: 10.0.0.1
      - hostname: ldap2
        ip: 10.0.0.2
-domainname: 'aws.edifixio.com'
+domainname: 'aws.xxx.com'
 ```
 
 # Exemple how to use :

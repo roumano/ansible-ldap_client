@@ -8,6 +8,7 @@
       server: "ldaps://ldap1/,ldaps://ldap2/"
       base: "dc=exemple,dc=com"
       bind: "cn=readonly"
+    domainname: 'aws.xxx.com'
 
   pre_tasks:
     - name: Add repository for PHP 5.5 + Apache 2.4 on Ubuntu 12.04.
@@ -15,7 +16,7 @@
       when: ansible_distribution_version == "12.04"
 
     - name: Update apt cache on Ubuntu 12.04.
-      apt: update_cache=yes
+      ansible.builtin.apt: update_cache=yes
       when: ansible_distribution_version == "12.04"
 
   roles:
