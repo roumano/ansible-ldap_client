@@ -1,16 +1,25 @@
 ---
 - name: Include specific variable
-  include_vars: "{{ file }}"
+  ansible.builtin.include_vars: "{{ file }}"
   with_first_found:
     - "{{ ansible_os_family }}_{{ ansible_distribution_version }}.yml"
     - "{{ ansible_os_family }}.yml"
   loop_control:
     label: "{{ file | basename }}"
     loop_var: file
-# Install default packages list
-- ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
-- import_tasks: ldap.yml
-- import_tasks: sssd.yml
-- import_tasks: services.yml
-- import_tasks: sshd.yml
+
+- name: Install packages
+  ansible.builtin.include_tasks: "{{ ansible_pkg_mgr }}.yml"
+
+- name: Configure ldap
+  ansible.builtin.include_tasks: ldap.yml
+
+- name: Configure SSSD
+  ansible.builtin.include_tasks: sssd.yml
+
+- name: Configure Services
+  ansible.builtin.include_tasks: services.yml
+
+- name: Configure sshd
+  ansible.builtin.include_tasks: sshd.yml
   when: sssd_sshd_support | default(True) | bool

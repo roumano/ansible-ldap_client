@@ -1,15 +1,14 @@
+---
 galaxy_info:
   author: Christian Iuga
   description: Role to install and configuration ldap client
+  role_name: ldap_client
   license: GPL
-  min_ansible_version: 2.0
+  min_ansible_version: '2.10'
   platforms:
     - name: EL
       versions:
         - all
-        - any
-        - 7
-        - 6
     - name: Debian
       versions:
         - bookworm
@@ -17,12 +16,6 @@ galaxy_info:
         - buster
         - jessie
         - wheezy
-    - name: RedHat
-      versions:
-        - all
-        - any
-        - 7
-        - 6
     - name: Amazon
       version:
         - 2016.09

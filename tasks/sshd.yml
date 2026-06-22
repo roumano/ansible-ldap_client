@@ -8,9 +8,9 @@
     regexp: "^{{ item.regexp }}"
     line: "{{ item.line }}"
     validate: "/usr/sbin/sshd -T -f %s"
-  with_items: "{{ ssh_AuthorizedKeys | default ([]) }}"
+  with_items: "{{ ldap_client_ssh_authorizedkeys | default([]) }}"
   loop_control:
     label: "{{ item.line }}"
   notify:
-    - service | sssd | restart
-    - service | sshd | restart
+    - Service | sssd | restart
+    - Service | sshd | restart

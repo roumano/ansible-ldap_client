@@ -1,6 +1,6 @@
 ---
 - name: Enable necessary services
-  service:
+  ansible.builtin.service:
     name: "{{ item }}"
     state: started
     enabled: true

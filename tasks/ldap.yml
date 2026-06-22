@@ -1,13 +1,13 @@
 ---
-- name: reconfiuge ldap when install variable
-  set_fact:
-    ldap_reconfiguration: true
-  when: install | default (False) | bool
+- name: Reconfiuge ldap when install variable
+  ansible.builtin.set_fact:
+    ldap_client_reconfiguration: true
+  when: Install | default (False) | bool
 
 - name: Debian | Execute pam-auth-update
   ansible.builtin.command: "pam-auth-update --package --force"
   changed_when: false
-  when: ldap_reconfiguration and ansible_os_family == "Debian"
+  when: ldap_client_reconfiguration and ansible_os_family == "Debian"
 
 # pam-auth-update --package --force reset conf of /etc/pam.d/common-session, ...
 - name: Create homedirectory at first connexion
@@ -18,7 +18,7 @@
     line: "session required                        pam_mkhomedir.so skel=/etc/skel umask=0027"
     insertafter: "pam_unix.so"
     state: present
-  when: ldap_reconfiguration and ansible_os_family == "Debian"
+  when: ldap_client_reconfiguration and ansible_os_family == "Debian"
 
 # TODO test if need : systemctl enable --now oddjobd.service
 - name: Create homedirectory at first connexion
@@ -29,15 +29,16 @@
     line: "session     required      pam_mkhomedir.so skel=/etc/skel umask=0027"
     insertafter: "pam_unix.so"
     state: present
-  when: ldap_reconfiguration and ansible_facts['distribution'] == "Rocky"
+  when: ldap_client_reconfiguration and ansible_facts['distribution'] == "Rocky"
 
-- name: "Configure {{ ldap_dir }}/ldap.conf for default ldap parameters in ldapsearch"
+- name: "Configure ldap.conf for default ldap parameters in ldapsearch"
   ansible.builtin.lineinfile:
     create: true
-    backup: "{{ backup | default ('yes') }}"
-    dest: "{{ ldap_dir }}/ldap.conf"
+    backup: "{{ backup | default('yes') }}"
+    dest: "{{ ldap_client_ldap_dir }}/ldap.conf"
     regexp: "^{{ item.regexp }}"
     line: "{{ item.line }}"
+    mode: '644'
   with_items:
     - regexp: '^URI'
       line: "URI ldaps://{{ ldap.server | join('/,ldaps://') }}/"
@@ -51,27 +52,27 @@
 - name: Check if file /etc/sudo-ldap.conf exist
   ansible.builtin.stat:
     path: /etc/sudo-ldap.conf
-  register: sudo_file
+  register: ldap_client_sudo_file
 
 - name: Update sudo-ldap.conf
   ansible.builtin.lineinfile:
     path: /etc/sudo-ldap.conf
-    backup: "{{ backup | default ('yes') }}"
+    backup: "{{ backup | default(true) }}"
     regexp: "^uri"
     line: "uri ldaps://{{ ldap.server | join('/,ldaps://') }}/"
-  when: sudo_file.stat.exists
+  when: ldap_client_sudo_file.stat.exists
 
 - name: Check if file /etc/nslcd.conf exist
   ansible.builtin.stat:
     path: /etc/nslcd.conf
-  register: nslcd_file
+  register: ldap_client_nslcd_file
 
 - name: Update /etc/nslcd.conf
   ansible.builtin.lineinfile:
     path: /etc/nslcd.conf
-    backup: "{{ backup | default ('yes') }}"
+    backup: "{{ backup | default(true) }}"
     regexp: "^uri"
     line: "uri ldaps://{{ ldap.server | join('/,ldaps://') }}/"
-  when: nslcd_file.stat.exists
+  when: ldap_client_nslcd_file.stat.exists
   notify:
-    - service | nslcd | restart
+    - Service | nslcd | restart

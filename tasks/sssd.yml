@@ -13,28 +13,29 @@
     label: "{{ file.path }}"
     loop_var: file
   notify:
-    - service | sssd | restart
+    - Service | sssd | restart
 
 - name: Disable ldap_rfc2307_fallback_to_local_users on Ubuntu xenial
-  set_fact:
-    ldap_rfc2307_fallback_to_local_users: false
+  ansible.builtin.set_fact:
+    ldap_client_ldap_rfc2307_fallback_to_local_users: false
   when: ansible_distribution == "Ubuntu" and ansible_distribution_major_version == "16"
 
-- name: sssd configuration
+- name: SSSD configuration
   ansible.builtin.template:
     src: sssd.j2
     dest: /etc/sssd/sssd.conf
     owner: root
     group: root
-    mode: 0600
+    mode: '600'
     backup: true
   notify:
-    - service | sssd | restart
+    - Service | sssd | restart
 
 - name: Update /etc/nsswitch.conf
   ansible.builtin.lineinfile:
     create: true
     dest: /etc/nsswitch.conf
+    mode: '644'
     regexp: "^{{ item.regexp }}"
     line: "{{ item.line }}"
   with_items:
@@ -57,30 +58,30 @@
   loop_control:
     label: "{{ item.line }}"
   notify:
-    - service | sssd | restart
+    - Service | sssd | restart
 
 # Bug in Centos6 if never make a binding, authconfig with full argument crash :
 # UnicodeDecodeError: 'ascii' codec can't decode byte 0xc2 in position 2047: ordinal not in range(128)
 # Lunch a minimal authconfig to avoid the issue :
 # - name: Redhat | Execute authconfig workarround bug
 #   ansible.builtin.command: "authconfig --update --disableldaptls"
-#   when: ldap_reconfiguration and ( ansible_os_family == "RedHat" and ansible_distribution_major_version == "6" )
+#   when: ldap_client_reconfiguration and ( ansible_os_family == "RedHat" and ansible_distribution_major_version == "6" )
 
 # - name: Redhat | Push certificate
 #   ansible.builtin.file:
-#     path: "{{ ldap_dir }}/cacerts"
+#     path: "{{ ldap_client_ldap_dir }}/cacerts"
 #     state: directory
-#   when: ldap_reconfiguration and ansible_os_family == "RedHat"
+#   when: ldap_client_reconfiguration and ansible_os_family == "RedHat"
 
 # - name: Redhat | Push certificate
 #   ansible.builtin.copy:
 #     src: /usr/local/share/ca-certificates/STAR.embl.fr.chain.crt
-#     dest: "{{ ldap_dir }}/cacerts/ca.crt"
+#     dest: "{{ ldap_client_ldap_dir }}/cacerts/ca.crt"
 #     remote_src: yes
-#   when: ldap_reconfiguration and ansible_os_family == "RedHat"
+#   when: ldap_client_reconfiguration and ansible_os_family == "RedHat"
 
 # - name: Redhat | Execute authconfig
 # yamllint disable-line rule:line-length
-#   ansible.builtin.command: "authconfig --update --disableldaptls --disableldap  --disableldapauth --disableforcelegacy --disablenis --disablekrb5 --enablesssd --enablesssdauth --enablelocauthorize --enablemkhomedir --enablecachecreds --ldapserver='ldaps://{{ ldap.server | join('/,ldaps://') }}/' --ldapbasedn={{ ldap.base }} --ldaploadcacert=file:{{ ldap_dir }}/cacerts/ca.crt" # noqa 204
+#   ansible.builtin.command: "authconfig --update --disableldaptls --disableldap  --disableldapauth --disableforcelegacy --disablenis --disablekrb5 --enablesssd --enablesssdauth --enablelocauthorize --enablemkhomedir --enablecachecreds --ldapserver='ldaps://{{ ldap.server | join('/,ldaps://') }}/' --ldapbasedn={{ ldap.base }} --ldaploadcacert=file:{{ ldap_client_ldap_dir }}/cacerts/ca.crt" # noqa 204
 #   changed_when: false
-#   when: ldap_reconfiguration and ansible_os_family == "RedHat"
+#   when: ldap_client_reconfiguration and ansible_os_family == "RedHat"

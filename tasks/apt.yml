@@ -1,12 +1,11 @@
 ---
 # Install standard stuff
-
 - name: Debian | Install ldap needed packages
   ansible.builtin.apt:
-    name: "{{ item | default ( {} ) }}"
-    dpkg_options: "{{ dpkg_options | default ('force-confdef,force-confold') }}"
-    force: "{{ apt_force| default ('no') }}"
+    name: "{{ item | default({}) }}"
+    dpkg_options: "{{ dpkg_options | default('force-confdef,force-confold') }}"
+    force: "{{ apt_force | default('no') }}"
   environment:
     SUDO_FORCE_REMOVE: "yes"
   tags: package
-  with_items: "{{ ldap_packages }}"
+  with_items: "{{ ldap_client_packages }}"

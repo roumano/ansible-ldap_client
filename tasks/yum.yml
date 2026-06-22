@@ -1,6 +1,6 @@
 ---
 # Install standard stuff
 - name: Redhat | Install ldap needed packages
-  ansible.builtin.yum:
-    name: "{{ ldap_packages }}"
+  ansible.builtin.dnf:
+    name: "{{ ldap_client_packages }}"
   tags: package

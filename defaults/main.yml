@@ -1,14 +1,14 @@
 ---
 # By default, don't reconfigure pam and ...
-ldap_reconfiguration: false
-restrit_access: true
-restrit_ssh_access: false
+ldap_client_reconfiguration: false
+ldap_client_restrict_access: true
+ldap_client_restrict_ssh_access: false
 # Normaly configuration go into /etc/openldap/ (like /etc/openldap/ldap.conf & /etc/openldap/cacerts
 # But Debian Wheezy choose : /etc/ldap
-ldap_dir: "{% if ansible_distribution == 'Debian'  or ansible_distribution == 'Ubuntu' %}/etc/ldap{% else %}/etc/openldap{% endif %}"
-password_policy: false
-ssh_AuthorizedKeys:
+ldap_client_ldap_dir: "{% if ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu' %}/etc/ldap{% else %}/etc/openldap{% endif %}"
+ldap_client_password_policy: false
+ldap_client_ssh_authorizedkeys:
   - {regexp: '^(.*)AuthorizedKeysCommandUser (.*)', line: 'AuthorizedKeysCommandUser root'}
   - {regexp: '^(.*)AuthorizedKeysCommand (.*)', line: 'AuthorizedKeysCommand /usr/bin/sss_ssh_authorizedkeys'}
 
-sssd_services: "{{ ['nss','pam','sudo'] if restrit_ssh_access | bool else ['nss','pam','ssh','sudo'] }}"
+ldap_client_sssd_services: "{{ ['nss', 'pam', 'sudo'] if ldap_client_restrict_ssh_access | bool else ['nss', 'pam', 'ssh', 'sudo'] }}"

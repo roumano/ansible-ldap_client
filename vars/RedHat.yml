@@ -1,5 +1,5 @@
 ---
-ldap_packages:
+ldap_client_packages:
   - authconfig
   - sssd-ldap
   - sssd-tools

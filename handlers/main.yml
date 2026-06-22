@@ -1,16 +1,17 @@
-- name: service | sssd | restart
-  service:
+---
+- name: Service | sssd | restart
+  ansible.builtin.service:
     name: sssd
     state: restarted
-- name: service | sshd | reload
-  service:
+- name: Service | sshd | reload
+  ansible.builtin.service:
     name: sshd
     state: reloaded
-- name: service | sshd | restart
-  service:
+- name: Service | sshd | restart
+  ansible.builtin.service:
     name: sshd
     state: restarted
-- name: service | nslcd | restart
-  service:
+- name: Service | nslcd | restart
+  ansible.builtin.service:
     name: nslcd
     state: restarted

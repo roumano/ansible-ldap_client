@@ -49,7 +49,7 @@ cache_credentials = True
 ## ´pwdAccountLockedTime´ is present and has value of ´000001010000Z´. Please see the option ldap_pwdlockout_dn.
 
 {# Restrit access to machine with host field in the user : host #}
-{% if restrit_access %}
+{% if ldap_client_restrict_access %}
 ldap_access_order = host,lockout
 {% elif ldap.access_order is defined %}
 ldap_access_order = {{ ldap.access_order }}
@@ -61,13 +61,13 @@ ldap_access_order = lockout
 ldap_access_filter = {{ ldap.access_filter }}
 {% endif %}
 {# This option specifies the DN of password policy entry on LDAP server #}
-{% if password_policy %}
+{% if ldap_client_password_policy %}
 ldap_pwdlockout_dn = {{ ldap.pwdlockout |default('cn=default') }},ou=pwpolicies,{{ ldap.base }}
 {% endif %}
 
 {# Local account can have ldap group #}
 {# crash of SSSD in Ubuntu xenial is set to True #}
-## ldap_rfc2307_fallback_to_local_users = {{ ldap_rfc2307_fallback_to_local_users |default ('True') }}
+## ldap_rfc2307_fallback_to_local_users = {{ ldap_client_ldap_rfc2307_fallback_to_local_users |default ('True') }}
 
 ldap_user_authorized_host = host
 
@@ -96,7 +96,7 @@ enumerate = {{ sssd_enumerate | bool }}
 {% endif %}
 
 [sssd]
-services = {{ sssd_services | join(', ') }}
+services = {{ ldap_client_sssd_services | join(', ') }}
 config_file_version = 2
 
 domains = default
